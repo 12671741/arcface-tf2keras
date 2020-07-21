@@ -9,7 +9,6 @@ class ArcFace(Layer):
 
     def build(self, input_shape):
         super(ArcFace, self).build(input_shape)
-#         print(input_shape[-1],input_shape)
         self.W = self.add_weight(name='W',
                                 shape=(input_shape[-1], self.n_classes),
                                 initializer='glorot_uniform',
@@ -26,21 +25,17 @@ class ArcFace(Layer):
         # dot product
         logits = x @ W
         return logits
-        # add margin
-        # clip logits to prevent zero division when backward
 
     def compute_output_shape(self, input_shape):
         return (None, self.n_classes)
     
-def af_loss(y_true,y_pred, s=30.0, m=0.50,):
-    y=y_true
-    logits=y_pred
-    m=0.5
-    s=30.
-    theta = tf.acos(tf.clip_by_value(logits, -1.0 + tf.keras.backend.epsilon(), 1.0 - tf.keras.backend.epsilon()))
+def af_loss(y_true,y_pred, s=30.0, m=0.50):
+    # add margin
+    # clip logits to prevent zero division when backward
+    theta = tf.acos(tf.clip_by_value(y_pred, -1.0 + tf.keras.backend.epsilon(), 1.0 - tf.keras.backend.epsilon()))
     target_logits = tf.cos(theta + m)
 
-    logits = logits * (1 - y) + target_logits * y
+    logits = y_pred * (1 - y_true) + target_logits * y_true
     # feature re-scale
     logits *= s
     out = tf.nn.softmax(logits)
@@ -68,6 +63,6 @@ if __name__=='__main__':
         x=Dense(3)(x)
         x = ArcFace(n_classes=10)(x)
         model=tf.keras.models.Model(inp,x)
-        model.compile(optimizer=tf.optimizers.Adam(1e-3),loss=ac_loss,metrics=['accuracy'])
+        model.compile(optimizer=tf.optimizers.Adam(1e-3),loss=af_loss,metrics=['accuracy'])
         return model
     model=make_model()
