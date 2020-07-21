@@ -1,1 +1,0 @@
-![Display](/graphs/res.png)
